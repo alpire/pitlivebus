@@ -1,6 +1,6 @@
 # Pittsburgh buses live map
 
-Running live on http://alpire.me/buses.
+Running live at http://pitlivebus.com.
 
 ## Requirements
 
