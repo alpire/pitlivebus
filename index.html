@@ -1,0 +1,141 @@
+<html>
+  <head>
+    <title>Pittsburgh Buses Live Map</title>
+    <meta name="author" content="Alexandre Rebert">
+    <style>
+      #map-canvas {
+        width: 100%;
+        height: 100%;
+        left: 0;
+        position: absolute;
+        top: 0; 
+      }
+    </style>
+  </head>
+  <!-- Made by alex@alpire.me. Email me for comments -->
+  <!-- You want to keep this map up? Consider donating to 18rhXgvM2axTpu5prNrxd5dnVgJ4f8sQM1! -->
+
+  <body>
+    <div id="map-canvas"></div>
+    <script src="//maps.googleapis.com/maps/api/js?v=3.exp&libraries=adsense&key=AIzaSyAlEmLd1udl5HLgH03yE0ajiIsCuNdj2EA"></script>
+    <script src="//www.firebase.com/resources/js/publicdata/geofire.js"></script>
+    <script src="//cdn.firebase.com/js/client/1.0.17/firebase.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+<script>
+/*global Firebase, google, $ */
+
+(function () {
+  "use strict";
+  var map, buses, ref;
+  buses = {};
+  ref = new Firebase("https://radiant-torch-6140.firebaseio.com/");
+
+  function newBus(bus, firebaseId) {
+    var busLatLng, tag, marker;
+    busLatLng = new google.maps.LatLng(bus.lat, bus.lon);
+    tag = bus.routeTag.toString()[0].toUpperCase() + bus.routeTag.toString().slice(1);
+    marker = new google.maps.Marker({
+      icon: "//chart.googleapis.com/chart?chst=d_bubble_icon_text_small&chld=bus|bbT|" + tag + "|7094FF|eee",
+      position: busLatLng,
+      map: map
+    });
+    buses[firebaseId] = marker;
+  }
+
+  function feq(f1, f2) {
+    return (Math.abs(f1 - f2) < 0.000001);
+  }
+
+  google.maps.Marker.prototype.animatedMoveTo = function (toLat, toLng) {
+    var fromLat, fromLng, frames, percent, curLat, curLng, move;
+    fromLat = this.getPosition().lat();
+    fromLng = this.getPosition().lng();
+    if (feq(fromLat, toLat) && feq(fromLng, toLng)) {
+      return;
+    }
+    frames = [];
+    for (percent = 0; percent < 1; percent += 0.005) {
+      curLat = fromLat + percent * (toLat - fromLat);
+      curLng = fromLng + percent * (toLng - fromLng);
+      frames.push(new google.maps.LatLng(curLat, curLng));
+    }
+    move = function (marker, latlngs, index, wait) {
+      marker.setPosition(latlngs[index]);
+      if (index !== latlngs.length - 1) {
+        marker.timeoutId = setTimeout(function () {
+          move(marker, latlngs, index + 1, wait);
+        }, wait);
+      } else {
+        marker.timeoutId = null;
+      }
+    };
+    move(this, frames, 0, 25);
+  };
+
+  function start() {
+    var name, mapOptions, f, system;
+        
+    system = 0;
+            
+    name = transitSystems[system].tag;
+    mapOptions = {
+      center: new google.maps.LatLng(
+        transitSystems[system].lat,
+        transitSystems[system].lon
+      ),
+      zoom: transitSystems[system].zoom || 8,
+      mapTypeId: google.maps.MapTypeId.ROADMAP
+    };
+    map = new google.maps.Map(document.getElementById("map-canvas"), mapOptions);
+    var adUnitDiv = document.createElement('div');
+    var ad = new google.maps.adsense.AdUnit(adUnitDiv, {publisherId: 'pub-2798335580942131', map: map, 'format': google.maps.adsense.AdFormat.LARGE_HORIZONTAL_LINK_UNIT, visible: true, position: google.maps.ControlPosition.TOP_CENTER});
+    f = ref.child(name + "/vehicles").limit(500);
+    f.once("value", function (s) {
+      s.forEach(function (b) {
+        newBus(b.val(), b.name());
+      });
+    });
+    f.on("child_changed", function (s) {
+      var busMarker = buses[s.name()];
+      if (typeof busMarker === "undefined") {
+        newBus(s.val(), s.name());
+      } else {
+        window.clearTimeout(busMarker.timeoutId);
+        busMarker.animatedMoveTo(s.val().lat, s.val().lon);
+      }
+    });
+    f.on("child_removed", function (s) {
+      var busMarker = buses[s.name()];
+      if (typeof busMarker !== "undefined") {
+        busMarker.setMap(null);
+        delete buses[s.name()];
+      }
+    });
+  }
+
+  $(start);
+
+  var transitSystems = [ 
+    { lat: 40.440876,
+    lon: -79.9497555,
+    tag: 'pittsburgh',
+    city: 'Pittsburgh',
+    state: 'PA',
+    name: 'Pittsburgh',
+    zoom: 14 }]
+
+  }());
+
+</script>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-55652103-1', 'auto');
+  ga('send', 'pageview');
+</script>
+</body>
+</html>
