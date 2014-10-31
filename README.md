@@ -11,11 +11,12 @@ Running live at http://pitlivebus.com.
 ## Setup
 
 ```
-sudo pip install -r requirements.txt;
-while [ 1 ]; do python pat_to_firebase.py; sleep 5; done
+$ cd backend
+$ sudo pip install -r requirements.txt
+$ while [ 1 ]; do python pat_to_firebase.py; sleep 5; done
 ```
 
-Open index.html.
+Open web/index.html.
 
 ## Credits
 
